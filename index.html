@@ -1,0 +1,1711 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monster Clicker – Demo mit PvP-Arena</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-button: #0f3460;
+      --text: #eaeaea;
+      --accent: #e94560;
+      --accent-glow: rgba(233, 69, 96, 0.3);
+      --gold: #ffd700;
+      --rare: #6a5acd;
+      --epic: #9370db;
+      --legendary: #ff6b6b;
+      --success: #4caf50;
+      --danger: #f44336;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      margin: 0;
+      padding: 20px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    
+    h1 {
+      text-align: center;
+      color: var(--accent);
+      font-size: 2.5em;
+      text-shadow: 0 0 10px var(--accent-glow);
+      margin-bottom: 5px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: var(--text);
+      opacity: 0.8;
+      margin-bottom: 20px;
+    }
+    
+    /* Tab-Navigation */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      background: var(--bg-card);
+      border: 2px solid var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      color: var(--text);
+    }
+    
+    .tab:hover {
+      background: var(--bg-button);
+      border-color: var(--accent);
+    }
+    
+    .tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Klick-Bereich */
+    .click-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      border-radius: 15px;
+      padding: 20px;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    
+    .monster-button {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: var(--bg-button);
+      border: 5px solid var(--accent);
+      font-size: 80px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--accent-glow);
+      position: relative;
+    }
+    
+    .monster-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px var(--accent-glow);
+    }
+    
+    .monster-button:active {
+      transform: scale(0.95);
+    }
+    
+    .energy-counter {
+      margin-top: 20px;
+      font-size: 1.5em;
+      color: var(--gold);
+      text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    }
+    
+    .energy-per-second {
+      font-size: 1em;
+      color: var(--text);
+      opacity: 0.7;
+    }
+    
+    /* Sammelalbum */
+    .collection-section {
+      background: var(--bg-card);
+      border-radius: 15px;
+      padding: 20px;
+    }
+    
+    .collection-title {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+    
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    
+    .card {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      border: 2px solid var(--text);
+      transition: transform 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .card.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+    
+    .card .emoji {
+      font-size: 40px;
+      margin-bottom: 5px;
+    }
+    
+    .card .name {
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    
+    .card .rarity {
+      font-size: 0.8em;
+      padding: 2px 8px;
+      border-radius: 5px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    
+    .card .stats {
+      font-size: 0.8em;
+      color: var(--text);
+      opacity: 0.8;
+    }
+    
+    .rarity-common { background: #555; color: #ccc; }
+    .rarity-rare { background: var(--rare); color: white; }
+    .rarity-epic { background: var(--epic); color: white; }
+    .rarity-legendary { background: var(--legendary); color: white; }
+    
+    /* Gebäude & Upgrades */
+    .buildings-section, .upgrades-section {
+      background: var(--bg-card);
+      border-radius: 15px;
+      padding: 20px;
+    }
+    
+    .buildings-title, .upgrades-title {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+    
+    .building, .upgrade {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--text);
+    }
+    
+    .building-info, .upgrade-info {
+      flex: 1;
+    }
+    
+    .building-name, .upgrade-name {
+      font-weight: bold;
+      color: var(--text);
+    }
+    
+    .building-cost, .upgrade-cost {
+      color: var(--gold);
+      font-size: 0.9em;
+    }
+    
+    .buy-button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+      min-width: 80px;
+    }
+    
+    .buy-button:hover:not(:disabled) {
+      background: #c73e54;
+    }
+    
+    .buy-button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    
+    /* Stats */
+    .stats-section {
+      grid-column: 1 / -1;
+      background: var(--bg-card);
+      border-radius: 15px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.5em;
+      color: var(--gold);
+      font-weight: bold;
+    }
+    
+    .stat-label {
+      font-size: 0.9em;
+      color: var(--text);
+      opacity: 0.7;
+    }
+    
+    /* PvP-Arena */
+    .arena-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .arena-section {
+      background: var(--bg-card);
+      border-radius: 15px;
+      padding: 20px;
+    }
+    
+    .arena-title {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+    
+    .deck-section {
+      margin-bottom: 20px;
+    }
+    
+    .deck-title {
+      color: var(--text);
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    
+    .deck-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .deck-slot {
+      background: var(--bg);
+      border: 2px dashed var(--text);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .deck-slot:hover {
+      border-color: var(--accent);
+    }
+    
+    .deck-slot.filled {
+      border-style: solid;
+      border-color: var(--gold);
+    }
+    
+    .deck-slot.empty::after {
+      content: "+";
+      color: var(--text);
+      opacity: 0.5;
+      font-size: 24px;
+    }
+    
+    .deck-slot .slot-emoji {
+      font-size: 30px;
+      margin-bottom: 5px;
+    }
+    
+    .deck-slot .slot-name {
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    
+    .opponent-selector {
+      margin-bottom: 20px;
+    }
+    
+    .opponent-title {
+      color: var(--text);
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    
+    .opponent-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .opponent-option {
+      background: var(--bg);
+      border: 1px solid var(--text);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .opponent-option:hover {
+      border-color: var(--accent);
+    }
+    
+    .opponent-option.selected {
+      border-color: var(--gold);
+      background: rgba(255, 215, 0, 0.1);
+    }
+    
+    .battle-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .battle-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .battle-button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    
+    .battle-button:hover:not(:disabled) {
+      background: #c73e54;
+    }
+    
+    .battle-button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    
+    .battle-log {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 15px;
+      height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      border: 1px solid var(--text);
+    }
+    
+    .log-entry {
+      margin-bottom: 8px;
+      font-size: 0.9em;
+    }
+    
+    .log-entry.attack {
+      color: var(--danger);
+    }
+    
+    .log-entry.defend {
+      color: var(--success);
+    }
+    
+    .log-entry.info {
+      color: var(--text);
+      opacity: 0.8;
+    }
+    
+    .monster-stats {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .monster-stat {
+      text-align: center;
+    }
+    
+    .monster-stat-label {
+      font-size: 0.8em;
+      color: var(--text);
+      opacity: 0.7;
+    }
+    
+    .monster-stat-value {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: var(--gold);
+    }
+    
+    .hp-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-button);
+      border-radius: 4px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    
+    .hp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), var(--danger));
+      transition: width 0.3s;
+    }
+    
+    /* Notifications */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--accent);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      animation: fadeInOut 2s ease-in-out;
+      z-index: 1000;
+    }
+    
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-20px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 15px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      border: 2px solid var(--accent);
+      position: relative;
+    }
+    
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 24px;
+      cursor: pointer;
+    }
+    
+    .modal-title {
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .modal-button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    
+    .modal-button.confirm {
+      background: var(--success);
+      color: white;
+      border: none;
+    }
+    
+    .modal-button.cancel {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--text);
+    }
+    
+    .modal-button:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <h1>👹 Monster Clicker</h1>
+  <p class="subtitle">Klicke auf das Monster, um Energie zu sammeln und neue Karten zu erhalten!</p>
+  
+  <!-- Tab-Navigation -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('main')">🏠 Hauptspiel</div>
+    <div class="tab" onclick="switchTab('collection')">📚 Sammelalbum</div>
+    <div class="tab" onclick="switchTab('arena')">⚔️ PvP-Arena</div>
+  </div>
+  
+  <!-- Hauptspiel-Tab -->
+  <div id="main-tab" class="tab-content active">
+    <div class="container">
+      <!-- Klick-Bereich -->
+      <section class="click-section">
+        <button class="monster-button" id="monsterButton">🐉</button>
+        <div class="energy-counter">
+          <span id="energy">0</span> 💰 Monster-Energie
+        </div>
+        <div class="energy-per-second">
+          <span id="energyPerSecond">0</span> 💰/s
+        </div>
+      </section>
+      
+      <!-- Gebäude -->
+      <section class="buildings-section">
+        <h2 class="buildings-title">🏗️ Gebäude</h2>
+        <div id="buildingsList">
+          <!-- Gebäude werden hier dynamisch eingefügt -->
+        </div>
+      </section>
+      
+      <!-- Upgrades -->
+      <section class="upgrades-section">
+        <h2 class="upgrades-title">⚡ Upgrades</h2>
+        <div id="upgradesList">
+          <!-- Upgrades werden hier dynamisch eingefügt -->
+        </div>
+      </section>
+      
+      <!-- Stats -->
+      <section class="stats-section">
+        <div class="stat">
+          <div class="stat-value" id="totalClicks">0</div>
+          <div class="stat-label">Gesamt-Klicks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="totalEnergy">0</div>
+          <div class="stat-label">Gesamt-Energie</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="uniqueMonsters">0</div>
+          <div class="stat-label">Einzigartige Monster</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="clickPower">1</div>
+          <div class="stat-label">Klick-Stärke</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  
+  <!-- Sammelalbum-Tab -->
+  <div id="collection-tab" class="tab-content">
+    <div class="collection-section" style="max-width: 1000px; margin: 0 auto;">
+      <h2 class="collection-title">📚 Sammelalbum (<span id="collectionCount">0</span>/<span id="totalMonsters">?</span>)</h2>
+      <div class="cards-grid" id="cardsGrid">
+        <!-- Karten werden hier dynamisch eingefügt -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- PvP-Arena-Tab -->
+  <div id="arena-tab" class="tab-content">
+    <div class="arena-container">
+      <!-- Dein Deck -->
+      <section class="arena-section">
+        <h2 class="arena-title">🃏 Dein Deck</h2>
+        <div class="deck-section">
+          <div class="deck-title">Wähle 3 Monster für dein Deck:</div>
+          <div class="deck-slots" id="playerDeck">
+            <div class="deck-slot" onclick="selectCardForDeck(0)"></div>
+            <div class="deck-slot" onclick="selectCardForDeck(1)"></div>
+            <div class="deck-slot" onclick="selectCardForDeck(2)"></div>
+          </div>
+        </div>
+        
+        <div class="deck-section">
+          <div class="deck-title">Verfügbare Monster:</div>
+          <div class="cards-grid" id="availableMonstersForDeck"></div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+          <button class="battle-button" onclick="startBattle()" id="startBattleBtn" disabled>Kampf starten</button>
+        </div>
+      </section>
+      
+      <!-- Gegner -->
+      <section class="arena-section">
+        <h2 class="arena-title">🎯 Gegner</h2>
+        <div class="opponent-selector">
+          <div class="opponent-title">Wähle einen Gegner:</div>
+          <div class="opponent-options" id="opponentOptions">
+            <div class="opponent-option" onclick="selectOpponent('ai-easy')">
+              <span>🤖</span>
+              <span><strong>KI (Einfach)</strong> – Schwache Monster</span>
+            </div>
+            <div class="opponent-option" onclick="selectOpponent('ai-medium')">
+              <span>🤖</span>
+              <span><strong>KI (Mittel)</strong> – Ausgewogene Monster</span>
+            </div>
+            <div class="opponent-option" onclick="selectOpponent('ai-hard')">
+              <span>🤖</span>
+              <span><strong>KI (Schwer)</strong> – Starke Monster</span>
+            </div>
+            <div class="opponent-option" onclick="showFriendCodeModal()">
+              <span>👥</span>
+              <span><strong>Freund</strong> – Mit Code verbinden</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="deck-section">
+          <div class="deck-title">Gegner-Deck:</div>
+          <div class="deck-slots" id="opponentDeck">
+            <div class="deck-slot"></div>
+            <div class="deck-slot"></div>
+            <div class="deck-slot"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    
+    <!-- Kampfbereich (wird bei Kampfstart angezeigt) -->
+    <div id="battleArea" style="display: none; margin-top: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
+      <h2 class="arena-title">⚔️ Kampf</h2>
+      <div class="arena-container">
+        <!-- Spieler-Monster -->
+        <section class="arena-section">
+          <h3 style="text-align: center; color: var(--success); margin-bottom: 15px;">👤 Dein Monster</h3>
+          <div id="playerBattleMonster" style="text-align: center;">
+            <div style="font-size: 80px; margin-bottom: 10px;" id="playerMonsterEmoji">?</div>
+            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;" id="playerMonsterName">Wähle ein Monster</div>
+            <div class="monster-stats">
+              <div class="monster-stat">
+                <div class="monster-stat-label">❤️ HP</div>
+                <div class="monster-stat-value" id="playerMonsterHP">0</div>
+                <div class="hp-bar"><div class="hp-fill" id="playerHPBar" style="width: 100%;"></div></div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">⚔️ Angriff</div>
+                <div class="monster-stat-value" id="playerMonsterAttack">0</div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">🛡️ Verteidigung</div>
+                <div class="monster-stat-value" id="playerMonsterDefense">0</div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Gegner-Monster -->
+        <section class="arena-section">
+          <h3 style="text-align: center; color: var(--danger); margin-bottom: 15px;">🎯 Gegner-Monster</h3>
+          <div id="opponentBattleMonster" style="text-align: center;">
+            <div style="font-size: 80px; margin-bottom: 10px;" id="opponentMonsterEmoji">?</div>
+            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;" id="opponentMonsterName">Wähle Gegner</div>
+            <div class="monster-stats">
+              <div class="monster-stat">
+                <div class="monster-stat-label">❤️ HP</div>
+                <div class="monster-stat-value" id="opponentMonsterHP">0</div>
+                <div class="hp-bar"><div class="hp-fill" id="opponentHPBar" style="width: 100%;"></div></div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">⚔️ Angriff</div>
+                <div class="monster-stat-value" id="opponentMonsterAttack">0</div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">🛡️ Verteidigung</div>
+                <div class="monster-stat-value" id="opponentMonsterDefense">0</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      
+      <div class="battle-section">
+        <div class="battle-controls">
+          <button class="battle-button" onclick="playerAttack()" id="attackBtn" disabled>🔥 Angreifen</button>
+          <button class="battle-button" onclick="playerDefend()" id="defendBtn" disabled>🛡️ Verteidigen</button>
+          <button class="battle-button" onclick="endBattle()" id="endBattleBtn">❌ Kampf beenden</button>
+        </div>
+        
+        <div class="battle-log" id="battleLog">
+          <div class="log-entry info">Wähle ein Monster und einen Gegner, um den Kampf zu starten.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal für Freundescode -->
+  <div id="friendCodeModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeFriendCodeModal()">&times;</span>
+      <h2 class="modal-title">👥 Mit Freund verbinden</h2>
+      <p style="text-align: center; margin-bottom: 20px;">
+        Gib den Code deines Freundes ein oder teile deinen eigenen Code, um gegeneinander zu kämpfen.
+      </p>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="margin-bottom: 10px;">Dein Code:</div>
+        <div style="background: var(--bg); padding: 10px; border-radius: 8px; font-family: monospace; font-size: 1.2em; letter-spacing: 2px; border: 1px solid var(--text);">
+          <span id="playerCode">Generiere...</span>
+          <button class="modal-button confirm" onclick="copyCode()" style="margin-left: 10px; padding: 5px 10px; font-size: 0.9em;">📋 Kopieren</button>
+        </div>
+      </div>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <input type="text" id="friendCodeInput" placeholder="Code des Freundes eingeben" 
+               style="padding: 10px; border-radius: 8px; border: 1px solid var(--text); background: var(--bg); color: var(--text); width: 80%;">
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-button confirm" onclick="connectToFriend()">Verbinden</button>
+        <button class="modal-button cancel" onclick="closeFriendCodeModal()">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal für Monster-Auswahl -->
+  <div id="monsterSelectModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <span class="modal-close" onclick="closeMonsterSelectModal()">&times;</span>
+      <h2 class="modal-title">⚔️ Wähle dein Kampf-Monster</h2>
+      <p style="text-align: center; margin-bottom: 20px;">Wähle eines deiner Monster für den Kampf:</p>
+      <div class="cards-grid" id="monsterSelectGrid" style="max-height: 300px;"></div>
+      <div class="modal-buttons">
+        <button class="modal-button cancel" onclick="closeMonsterSelectModal()">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // ========== DATEN ==========
+    const monsters = [
+      { emoji: "🐺", name: "Waldwolf", rarity: "common", attack: 5, defense: 3, hp: 20 },
+      { emoji: "🦇", name: "Nachtfledermaus", rarity: "common", attack: 4, defense: 2, hp: 15 },
+      { emoji: "🕷️", name: "Giftspinne", rarity: "common", attack: 6, defense: 1, hp: 10 },
+      { emoji: "🐍", name: "Schlangenkönig", rarity: "rare", attack: 10, defense: 5, hp: 25 },
+      { emoji: "🦄", name: "Mond-Einhorn", rarity: "rare", attack: 8, defense: 8, hp: 30 },
+      { emoji: "🐉", name: "Feuerdrache", rarity: "epic", attack: 15, defense: 10, hp: 40 },
+      { emoji: "👹", name: "Schatten-Dämon", rarity: "epic", attack: 20, defense: 5, hp: 35 },
+      { emoji: "💀", name: "Todesschädel", rarity: "legendary", attack: 25, defense: 15, hp: 50 },
+      { emoji: "👑", name: "Dämonenkönig", rarity: "legendary", attack: 30, defense: 20, hp: 60 },
+      { emoji: "🌑", name: "Abgrund-Wächter", rarity: "legendary", attack: 40, defense: 25, hp: 70 }
+    ];
+    
+    const buildings = [
+      { id: "monsterNest", name: "Monster-Nest", cost: 10, energyPerSecond: 0.1, owned: 0, description: "Generiert Monster-Energie" },
+      { id: "darkAltar", name: "Dunkler Altar", cost: 50, energyPerSecond: 0.5, owned: 0, description: "Beschwört dunkle Energie" },
+      { id: "dragonLair", name: "Drachennest", cost: 200, energyPerSecond: 2, owned: 0, description: "Beherbergt mächtige Drachen" },
+      { id: "abyssPortal", name: "Abgrund-Portal", cost: 1000, energyPerSecond: 10, owned: 0, description: "Öffnet ein Portal zum Abgrund" }
+    ];
+    
+    const upgrades = [
+      { id: "clickPower", name: "Kralle des Drachens", cost: 20, effect: () => clickPower++, description: "+1 Klick-Stärke" },
+      { id: "autoClicker", name: "Geisterhand", cost: 100, effect: () => { autoClicker += 0.1; updateEnergyPerSecond(); }, description: "+0.1 Klicks/s" },
+      { id: "luckCharm", name: "Glücks-Amulett", cost: 500, effect: () => { luckBonus += 0.05; }, description: "+5% Chance auf seltene Monster" },
+      { id: "doubleEnergy", name: "Energie-Verdoppler", cost: 1000, effect: () => { energyMultiplier *= 2; }, description: "Verdoppelt alle Energie-Einnahmen" }
+    ];
+    
+    // KI-Gegner-Decks
+    const aiDecks = {
+      'ai-easy': [
+        { ...monsters[0], hp: 20 },
+        { ...monsters[1], hp: 15 },
+        { ...monsters[2], hp: 10 }
+      ],
+      'ai-medium': [
+        { ...monsters[3], hp: 25 },
+        { ...monsters[4], hp: 30 },
+        { ...monsters[0], hp: 20 }
+      ],
+      'ai-hard': [
+        { ...monsters[5], hp: 40 },
+        { ...monsters[6], hp: 35 },
+        { ...monsters[7], hp: 50 }
+      ]
+    };
+    
+    // ========== STATE ==========
+    let energy = 0;
+    let totalEnergy = 0;
+    let totalClicks = 0;
+    let clickPower = 1;
+    let autoClicker = 0;
+    let luckBonus = 0;
+    let energyMultiplier = 1;
+    let collectedMonsters = [];
+    let playerDeck = [null, null, null];
+    let selectedDeckSlot = null;
+    let selectedOpponent = null;
+    let opponentDeck = [null, null, null];
+    let currentBattle = null;
+    let playerCode = null;
+    
+    // Sicherheitsfunktion: Setze alle Variablen auf Standardwerte zurück
+    function resetGameState() {
+      energy = Number(energy) || 0;
+      totalEnergy = Number(totalEnergy) || 0;
+      totalClicks = Number(totalClicks) || 0;
+      clickPower = Number(clickPower) || 1;
+      autoClicker = Number(autoClicker) || 0;
+      luckBonus = Number(luckBonus) || 0;
+      energyMultiplier = Number(energyMultiplier) || 1;
+      if (!Array.isArray(collectedMonsters)) collectedMonsters = [];
+      if (!Array.isArray(playerDeck)) playerDeck = [null, null, null];
+      if (!Array.isArray(opponentDeck)) opponentDeck = [null, null, null];
+    }
+    
+    // Regelmäßig prüfen, ob Variablen korrupt sind
+    setInterval(resetGameState, 5000);
+    
+    // ========== FUNKTIONEN ==========
+    function updateDisplay() {
+      // NaN-Prüfungen
+      if (isNaN(energy)) energy = 0;
+      if (isNaN(totalEnergy)) totalEnergy = 0;
+      
+      document.getElementById("energy").textContent = Math.floor(energy);
+      document.getElementById("totalEnergy").textContent = Math.floor(totalEnergy);
+      document.getElementById("totalClicks").textContent = totalClicks;
+      document.getElementById("clickPower").textContent = clickPower;
+      document.getElementById("uniqueMonsters").textContent = collectedMonsters.length;
+      document.getElementById("collectionCount").textContent = collectedMonsters.length;
+      document.getElementById("totalMonsters").textContent = monsters.length;
+      updateEnergyPerSecond();
+      renderBuildings();
+      renderUpgrades();
+    }
+    
+    function updateEnergyPerSecond() {
+      const baseEPS = autoClicker + buildings.reduce((sum, b) => sum + (b.energyPerSecond * b.owned), 0);
+      document.getElementById("energyPerSecond").textContent = (baseEPS * energyMultiplier).toFixed(1);
+      return baseEPS;
+    }
+    
+    function gainEnergy(amount, isManualClick = false) {
+      // Sicherstellen, dass alle Variablen Zahlen sind
+      amount = Number(amount) || 0;
+      if (isNaN(energy)) energy = 0;
+      if (isNaN(totalEnergy)) totalEnergy = 0;
+      if (isNaN(energyMultiplier)) energyMultiplier = 1;
+      
+      // Energie aktualisieren
+      const energyGain = amount * energyMultiplier;
+      energy += energyGain;
+      totalEnergy += energyGain;
+      
+      // NaN-Prüfung nach der Addition
+      if (isNaN(energy)) energy = 0;
+      if (isNaN(totalEnergy)) totalEnergy = 0;
+      
+      updateDisplay();
+      if (isManualClick) {
+        checkForMonster();
+      }
+    }
+    
+    function checkForMonster() {
+      // 5% Basis-Chance, ein Monster zu bekommen (skaliert mit Glück)
+      const chance = 0.05 + luckBonus;
+      if (Math.random() < chance) {
+        getRandomMonster();
+      }
+    }
+    
+    function getRandomMonster() {
+      const rarityWeights = {
+        common: 0.7,
+        rare: 0.2,
+        epic: 0.08,
+        legendary: 0.02
+      };
+      
+      const rand = Math.random();
+      let rarity;
+      if (rand < rarityWeights.legendary) rarity = "legendary";
+      else if (rand < rarityWeights.legendary + rarityWeights.epic) rarity = "epic";
+      else if (rand < rarityWeights.legendary + rarityWeights.epic + rarityWeights.rare) rarity = "rare";
+      else rarity = "common";
+      
+      const availableMonsters = monsters.filter(m => m.rarity === rarity);
+      if (availableMonsters.length === 0) return;
+      
+      const randomMonster = availableMonsters[Math.floor(Math.random() * availableMonsters.length)];
+      
+      const existingMonster = collectedMonsters.find(m => m.name === randomMonster.name);
+      if (existingMonster) {
+        existingMonster.count = (existingMonster.count || 1) + 1;
+      } else {
+        collectedMonsters.push({ ...randomMonster, count: 1 });
+      }
+      
+      showNotification(`✨ Du hast ${randomMonster.emoji} ${randomMonster.name} erhalten! (${rarity})`);
+      renderCards();
+      updateDisplay();
+      renderAvailableMonstersForDeck();
+    }
+    
+    function renderCards() {
+      const grid = document.getElementById("cardsGrid");
+      grid.innerHTML = "";
+      
+      collectedMonsters.forEach(monster => {
+        const card = document.createElement("div");
+        card.className = `card rarity-${monster.rarity}`;
+        card.innerHTML = `
+          <div class="emoji">${monster.emoji}</div>
+          <div class="name">${monster.name}</div>
+          <div class="rarity">${monster.rarity.charAt(0).toUpperCase() + monster.rarity.slice(1)}</div>
+          <div class="stats">⚔️${monster.attack} 🛡️${monster.defense} ❤️${monster.hp}</div>
+          <div style="font-size: 0.7em; margin-top: 5px;">x${monster.count || 1}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+    
+    function renderBuildings() {
+      const list = document.getElementById("buildingsList");
+      list.innerHTML = "";
+      
+      buildings.forEach(building => {
+        const div = document.createElement("div");
+        div.className = "building";
+        div.innerHTML = `
+          <div class="building-info">
+            <div class="building-name">${building.name}</div>
+            <div style="font-size: 0.9em; color: var(--text); opacity: 0.7;">${building.description}</div>
+            <div class="building-cost">Kosten: ${Math.floor(building.cost)} 💰 | Besitz: ${building.owned}</div>
+          </div>
+          <button class="buy-button" onclick="buyBuilding('${building.id}')" ${Math.floor(energy) < building.cost ? "disabled" : ""}>
+            Kaufen
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+    
+    function renderUpgrades() {
+      const list = document.getElementById("upgradesList");
+      list.innerHTML = "";
+      
+      upgrades.forEach(upgrade => {
+        const div = document.createElement("div");
+        div.className = "upgrade";
+        div.innerHTML = `
+          <div class="upgrade-info">
+            <div class="upgrade-name">${upgrade.name}</div>
+            <div style="font-size: 0.9em; color: var(--text); opacity: 0.7;">${upgrade.description}</div>
+            <div class="upgrade-cost">Kosten: ${Math.floor(upgrade.cost)} 💰</div>
+          </div>
+          <button class="buy-button" onclick="buyUpgrade('${upgrade.id}')" ${Math.floor(energy) < upgrade.cost ? "disabled" : ""}>
+            Kaufen
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+    
+    function buyBuilding(id) {
+      // NaN-Prüfung
+      if (isNaN(energy)) energy = 0;
+      
+      const building = buildings.find(b => b.id === id);
+      if (building && energy >= building.cost) {
+        energy -= building.cost;
+        building.owned++;
+        updateDisplay();
+        renderBuildings();
+        showNotification(`🏗️ ${building.name} gekauft!`);
+      }
+    }
+    
+    function buyUpgrade(id) {
+      const upgrade = upgrades.find(u => u.id === id);
+      if (upgrade && energy >= upgrade.cost) {
+        energy -= upgrade.cost;
+        upgrade.effect();
+        updateDisplay();
+        renderUpgrades();
+        showNotification(`⚡ ${upgrade.name} aktiviert!`);
+      }
+    }
+    
+    function showNotification(message) {
+      const notification = document.createElement("div");
+      notification.className = "notification";
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 2000);
+    }
+    
+    // ========== TAB-NAVIGATION ==========
+    function switchTab(tabName) {
+      try {
+        // Alle Tabs und Inhalte deaktivieren
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        // Auswahl aktivieren (finde das Tab-Element über den Namen)
+        const activeTab = document.querySelector(`.tab[onclick*="'${tabName}'"]`);
+        if (activeTab) activeTab.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+        
+        // Bei Arena-Tab: Deck und Gegner aktualisieren
+        if (tabName === 'arena') {
+          renderAvailableMonstersForDeck();
+          renderPlayerDeck();
+          renderOpponentDeck();
+        }
+      } catch (e) {
+        console.error("Tab-Wechsel fehlgeschlagen:", e);
+        // Falls etwas schiefgeht, versuche es mit einem einfachen Reset
+        location.reload();
+      }
+    }
+    
+    // ========== PVP-ARENA FUNKTIONEN ==========
+    function renderAvailableMonstersForDeck() {
+      const grid = document.getElementById("availableMonstersForDeck");
+      grid.innerHTML = "";
+      
+      collectedMonsters.forEach((monster, index) => {
+        const card = document.createElement("div");
+        card.className = `card rarity-${monster.rarity}`;
+        card.style.cursor = "pointer";
+        card.onclick = () => addMonsterToDeck(monster);
+        card.innerHTML = `
+          <div class="emoji">${monster.emoji}</div>
+          <div class="name">${monster.name}</div>
+          <div class="rarity">${monster.rarity.charAt(0).toUpperCase() + monster.rarity.slice(1)}</div>
+          <div class="stats">⚔️${monster.attack} 🛡️${monster.defense} ❤️${monster.hp}</div>
+          <div style="font-size: 0.7em; margin-top: 5px;">x${monster.count || 1}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+    
+    function renderPlayerDeck() {
+      const deck = document.getElementById("playerDeck");
+      deck.innerHTML = "";
+      
+      playerDeck.forEach((monster, index) => {
+        const slot = document.createElement("div");
+        slot.className = `deck-slot ${monster ? 'filled' : ''}`;
+        slot.onclick = () => selectDeckSlot(index);
+        
+        if (monster) {
+          slot.innerHTML = `
+            <div class="slot-emoji">${monster.emoji}</div>
+            <div class="slot-name">${monster.name}</div>
+          `;
+        }
+        
+        deck.appendChild(slot);
+      });
+      
+      // Prüfen, ob alle Slots gefüllt sind
+      const allFilled = playerDeck.every(m => m !== null);
+      document.getElementById("startBattleBtn").disabled = !allFilled || !selectedOpponent;
+    }
+    
+    function renderOpponentDeck() {
+      const deck = document.getElementById("opponentDeck");
+      deck.innerHTML = "";
+      
+      opponentDeck.forEach((monster, index) => {
+        const slot = document.createElement("div");
+        slot.className = `deck-slot ${monster ? 'filled' : ''}`;
+        
+        if (monster) {
+          slot.innerHTML = `
+            <div class="slot-emoji">${monster.emoji}</div>
+            <div class="slot-name">${monster.name}</div>
+          `;
+        }
+        
+        deck.appendChild(slot);
+      });
+    }
+    
+    function selectDeckSlot(index) {
+      selectedDeckSlot = index;
+      renderPlayerDeck();
+      
+      // Alle Karten markieren, die bereits im Deck sind
+      document.querySelectorAll('#availableMonstersForDeck .card').forEach((card, cardIndex) => {
+        const monsterName = collectedMonsters[cardIndex].name;
+        const isInDeck = playerDeck.some(m => m && m.name === monsterName);
+        card.classList.toggle('selected', isInDeck);
+      });
+    }
+    
+    function addMonsterToDeck(monster) {
+      if (selectedDeckSlot === null) {
+        showNotification("Wähle zuerst einen Deck-Slot aus!");
+        return;
+      }
+      
+      // Prüfen, ob das Monster schon im Deck ist
+      const isAlreadyInDeck = playerDeck.some(m => m && m.name === monster.name);
+      if (isAlreadyInDeck) {
+        showNotification("Dieses Monster ist bereits in deinem Deck!");
+        return;
+      }
+      
+      playerDeck[selectedDeckSlot] = { ...monster };
+      selectedDeckSlot = null;
+      renderPlayerDeck();
+      renderAvailableMonstersForDeck();
+      showNotification(`✅ ${monster.name} zum Deck hinzugefügt!`);
+    }
+    
+    function removeMonsterFromDeck(slotIndex) {
+      playerDeck[slotIndex] = null;
+      renderPlayerDeck();
+      renderAvailableMonstersForDeck();
+    }
+    
+    function selectOpponent(opponentId) {
+      // Entferne Auswahl von allen Optionen
+      document.querySelectorAll('.opponent-option').forEach(opt => opt.classList.remove('selected'));
+      
+      // Wähle neue Option
+      event.target.closest('.opponent-option').classList.add('selected');
+      
+      selectedOpponent = opponentId;
+      
+      // Gegner-Deck generieren
+      if (opponentId.startsWith('ai-')) {
+        opponentDeck = JSON.parse(JSON.stringify(aiDecks[opponentId]));
+      } else {
+        // Für Freunde: Platzhalter
+        opponentDeck = [null, null, null];
+      }
+      
+      renderOpponentDeck();
+      renderPlayerDeck(); // Aktualisiere den Start-Button
+      showNotification(`Gegner ausgewählt: ${opponentId}`);
+    }
+    
+    function startBattle() {
+      if (playerDeck.some(m => m === null)) {
+        showNotification("Fülle zuerst dein Deck mit 3 Monstern!");
+        return;
+      }
+      
+      if (!selectedOpponent) {
+        showNotification("Wähle zuerst einen Gegner aus!");
+        return;
+      }
+      
+      // Kampfbereich anzeigen
+      document.getElementById("battleArea").style.display = "block";
+      
+      // Monster-Auswahl Modal öffnen
+      openMonsterSelectModal();
+      
+      addToLog("info", "Wähle ein Monster für den Kampf aus.");
+    }
+    
+    function openMonsterSelectModal() {
+      const modal = document.getElementById("monsterSelectModal");
+      const grid = document.getElementById("monsterSelectGrid");
+      grid.innerHTML = "";
+      
+      playerDeck.forEach((monster, index) => {
+        if (monster) {
+          const card = document.createElement("div");
+          card.className = `card rarity-${monster.rarity}`;
+          card.style.cursor = "pointer";
+          card.onclick = () => selectMonsterForBattle(index);
+          card.innerHTML = `
+            <div class="emoji">${monster.emoji}</div>
+            <div class="name">${monster.name}</div>
+            <div class="rarity">${monster.rarity.charAt(0).toUpperCase() + monster.rarity.slice(1)}</div>
+            <div class="stats">⚔️${monster.attack} 🛡️${monster.defense} ❤️${monster.hp}</div>
+          `;
+          grid.appendChild(card);
+        }
+      });
+      
+      modal.classList.add("active");
+    }
+    
+    function closeMonsterSelectModal() {
+      document.getElementById("monsterSelectModal").classList.remove("active");
+    }
+    
+    function selectMonsterForBattle(deckIndex) {
+      closeMonsterSelectModal();
+      
+      currentBattle = {
+        player: {
+          monster: { ...playerDeck[deckIndex] },
+          currentHP: playerDeck[deckIndex].hp,
+          action: null
+        },
+        opponent: {
+          monster: null,
+          currentHP: 0,
+          action: null
+        },
+        turn: "player",
+        playerDeckIndex: deckIndex,
+        opponentDeckIndex: 0
+      };
+      
+      // Spieler-Monster anzeigen
+      updatePlayerBattleMonster();
+      
+      // Gegner-Monster auswählen (erstes im Deck)
+      const firstOpponentMonster = opponentDeck.find(m => m !== null);
+      if (firstOpponentMonster) {
+        currentBattle.opponent.monster = { ...firstOpponentMonster };
+        currentBattle.opponent.currentHP = firstOpponentMonster.hp;
+        currentBattle.opponentDeckIndex = opponentDeck.findIndex(m => m === firstOpponentMonster);
+        updateOpponentBattleMonster();
+      }
+      
+      // Kampf-Buttons aktivieren
+      document.getElementById("attackBtn").disabled = false;
+      document.getElementById("defendBtn").disabled = false;
+      
+      addToLog("info", `Kampf beginnt! ${currentBattle.player.monster.name} vs. ${currentBattle.opponent.monster.name}`);
+    }
+    
+    function updatePlayerBattleMonster() {
+      if (!currentBattle || !currentBattle.player.monster) return;
+      
+      const monster = currentBattle.player.monster;
+      const hpPercent = (currentBattle.player.currentHP / monster.hp) * 100;
+      
+      document.getElementById("playerMonsterEmoji").textContent = monster.emoji;
+      document.getElementById("playerMonsterName").textContent = monster.name;
+      document.getElementById("playerMonsterHP").textContent = Math.floor(currentBattle.player.currentHP);
+      document.getElementById("playerMonsterAttack").textContent = monster.attack;
+      document.getElementById("playerMonsterDefense").textContent = monster.defense;
+      document.getElementById("playerHPBar").style.width = `${hpPercent}%`;
+    }
+    
+    function updateOpponentBattleMonster() {
+      if (!currentBattle || !currentBattle.opponent.monster) return;
+      
+      const monster = currentBattle.opponent.monster;
+      const hpPercent = (currentBattle.opponent.currentHP / monster.hp) * 100;
+      
+      document.getElementById("opponentMonsterEmoji").textContent = monster.emoji;
+      document.getElementById("opponentMonsterName").textContent = monster.name;
+      document.getElementById("opponentMonsterHP").textContent = Math.floor(currentBattle.opponent.currentHP);
+      document.getElementById("opponentMonsterAttack").textContent = monster.attack;
+      document.getElementById("opponentMonsterDefense").textContent = monster.defense;
+      document.getElementById("opponentHPBar").style.width = `${hpPercent}%`;
+    }
+    
+    function playerAttack() {
+      if (!currentBattle || currentBattle.turn !== "player") return;
+      
+      currentBattle.player.action = "attack";
+      
+      // Gegner-Aktion zufällig wählen
+      currentBattle.opponent.action = Math.random() < 0.5 ? "attack" : "defend";
+      
+      // Schaden berechnen
+      let playerDamage = currentBattle.player.monster.attack;
+      let opponentDamage = currentBattle.opponent.monster.attack;
+      
+      // Wenn Gegner verteidigt, halber Schaden
+      if (currentBattle.opponent.action === "defend") {
+        playerDamage = Math.max(1, Math.floor(playerDamage / 2));
+      }
+      
+      // Wenn Spieler verteidigt, halber Schaden
+      if (currentBattle.player.action === "defend") {
+        opponentDamage = Math.max(1, Math.floor(opponentDamage / 2));
+      }
+      
+      // Schaden anwenden
+      currentBattle.opponent.currentHP -= playerDamage;
+      currentBattle.player.currentHP -= opponentDamage;
+      
+      // Log-Einträge
+      if (currentBattle.opponent.action === "attack") {
+        addToLog("attack", `${currentBattle.player.monster.name} greift an und fügt ${playerDamage} Schaden zu!`);
+        addToLog("attack", `${currentBattle.opponent.monster.name} greift an und fügt ${opponentDamage} Schaden zu!`);
+      } else {
+        addToLog("attack", `${currentBattle.player.monster.name} greift an und fügt ${playerDamage} Schaden zu!`);
+        addToLog("defend", `${currentBattle.opponent.monster.name} verteidigt sich und reduziert den Schaden!`);
+      }
+      
+      // HP-Bars aktualisieren
+      updatePlayerBattleMonster();
+      updateOpponentBattleMonster();
+      
+      // Prüfen, ob ein Monster besiegt wurde
+      checkBattleEnd();
+      
+      // Nächster Zug
+      currentBattle.turn = "opponent";
+      setTimeout(() => {
+        if (currentBattle) {
+          currentBattle.turn = "player";
+        }
+      }, 1500);
+    }
+    
+    function playerDefend() {
+      if (!currentBattle || currentBattle.turn !== "player") return;
+      
+      currentBattle.player.action = "defend";
+      
+      // Gegner-Aktion zufällig wählen
+      currentBattle.opponent.action = Math.random() < 0.7 ? "attack" : "defend";
+      
+      // Schaden berechnen
+      let opponentDamage = currentBattle.opponent.monster.attack;
+      let playerDamage = currentBattle.player.monster.attack;
+      
+      // Wenn Spieler verteidigt, halber Schaden
+      if (currentBattle.player.action === "defend") {
+        opponentDamage = Math.max(1, Math.floor(opponentDamage / 2));
+      }
+      
+      // Wenn Gegner verteidigt, halber Schaden
+      if (currentBattle.opponent.action === "defend") {
+        playerDamage = Math.max(1, Math.floor(playerDamage / 2));
+      }
+      
+      // Schaden anwenden (nur wenn Gegner angreift)
+      if (currentBattle.opponent.action === "attack") {
+        currentBattle.player.currentHP -= opponentDamage;
+        addToLog("defend", `${currentBattle.player.monster.name} verteidigt sich und reduziert den Schaden!`);
+        addToLog("attack", `${currentBattle.opponent.monster.name} greift an und fügt ${opponentDamage} Schaden zu!`);
+      } else {
+        addToLog("defend", `${currentBattle.player.monster.name} verteidigt sich!`);
+        addToLog("defend", `${currentBattle.opponent.monster.name} verteidigt sich ebenfalls!`);
+      }
+      
+      // HP-Bars aktualisieren
+      updatePlayerBattleMonster();
+      updateOpponentBattleMonster();
+      
+      // Prüfen, ob ein Monster besiegt wurde
+      checkBattleEnd();
+      
+      // Nächster Zug
+      currentBattle.turn = "opponent";
+      setTimeout(() => {
+        if (currentBattle) {
+          currentBattle.turn = "player";
+        }
+      }, 1500);
+    }
+    
+    function checkBattleEnd() {
+      if (!currentBattle) return;
+      
+      // Prüfen, ob Spieler-Monster besiegt wurde
+      if (currentBattle.player.currentHP <= 0) {
+        addToLog("danger", `${currentBattle.player.monster.name} wurde besiegt!`);
+        
+        // Nächstes Monster im Deck
+        const nextMonsterIndex = playerDeck.findIndex((m, i) => i > currentBattle.playerDeckIndex && m !== null);
+        if (nextMonsterIndex !== -1) {
+          currentBattle.player.monster = { ...playerDeck[nextMonsterIndex] };
+          currentBattle.player.currentHP = playerDeck[nextMonsterIndex].hp;
+          currentBattle.playerDeckIndex = nextMonsterIndex;
+          updatePlayerBattleMonster();
+          addToLog("info", `${currentBattle.player.monster.name} betritt den Kampf!`);
+        } else {
+          // Alle Monster besiegt – Kampf verloren
+          endBattle("lose");
+        }
+      }
+      
+      // Prüfen, ob Gegner-Monster besiegt wurde
+      if (currentBattle.opponent.currentHP <= 0) {
+        addToLog("success", `${currentBattle.opponent.monster.name} wurde besiegt!`);
+        
+        // Nächstes Monster im Gegner-Deck
+        const nextMonsterIndex = opponentDeck.findIndex((m, i) => i > currentBattle.opponentDeckIndex && m !== null);
+        if (nextMonsterIndex !== -1) {
+          currentBattle.opponent.monster = { ...opponentDeck[nextMonsterIndex] };
+          currentBattle.opponent.currentHP = opponentDeck[nextMonsterIndex].hp;
+          currentBattle.opponentDeckIndex = nextMonsterIndex;
+          updateOpponentBattleMonster();
+          addToLog("info", `${currentBattle.opponent.monster.name} betritt den Kampf!`);
+        } else {
+          // Alle Gegner-Monster besiegt – Kampf gewonnen
+          endBattle("win");
+        }
+      }
+    }
+    
+    function endBattle(result) {
+      if (result === "win") {
+        addToLog("success", "🎉 Du hast den Kampf gewonnen!");
+        showNotification("🎉 Kampf gewonnen! +50 Monster-Energie");
+        gainEnergy(50);
+      } else if (result === "lose") {
+        addToLog("danger", "💀 Du hast den Kampf verloren...");
+        showNotification("💀 Kampf verloren! Versuche es erneut.");
+      }
+      
+      // Kampf zurücksetzen
+      currentBattle = null;
+      document.getElementById("battleArea").style.display = "none";
+      document.getElementById("attackBtn").disabled = true;
+      document.getElementById("defendBtn").disabled = true;
+      
+      // Monster zurücksetzen
+      document.getElementById("playerMonsterEmoji").textContent = "?";
+      document.getElementById("playerMonsterName").textContent = "Wähle ein Monster";
+      document.getElementById("playerMonsterHP").textContent = "0";
+      document.getElementById("playerMonsterAttack").textContent = "0";
+      document.getElementById("playerMonsterDefense").textContent = "0";
+      document.getElementById("playerHPBar").style.width = "100%";
+      
+      document.getElementById("opponentMonsterEmoji").textContent = "?";
+      document.getElementById("opponentMonsterName").textContent = "Wähle Gegner";
+      document.getElementById("opponentMonsterHP").textContent = "0";
+      document.getElementById("opponentMonsterAttack").textContent = "0";
+      document.getElementById("opponentMonsterDefense").textContent = "0";
+      document.getElementById("opponentHPBar").style.width = "100%";
+    }
+    
+    function addToLog(type, message) {
+      const log = document.getElementById("battleLog");
+      const entry = document.createElement("div");
+      entry.className = `log-entry ${type}`;
+      entry.textContent = message;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+    
+    // ========== FREUNDES-CODE MODAL ==========
+    function showFriendCodeModal() {
+      // Generiere einen zufälligen Code, falls noch keiner existiert
+      if (!playerCode) {
+        playerCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        document.getElementById("playerCode").textContent = playerCode;
+      }
+      
+      document.getElementById("friendCodeModal").classList.add("active");
+    }
+    
+    function closeFriendCodeModal() {
+      document.getElementById("friendCodeModal").classList.remove("active");
+    }
+    
+    function copyCode() {
+      const code = document.getElementById("playerCode").textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        showNotification("Code kopiert!");
+      });
+    }
+    
+    function connectToFriend() {
+      const code = document.getElementById("friendCodeInput").value.trim().toUpperCase();
+      if (!code) {
+        showNotification("Bitte gib einen Code ein!");
+        return;
+      }
+      
+      // Hier würde normalerweise die Verbindung zum Freund hergestellt werden
+      // Für die Demo: Simuliere ein Gegner-Deck
+      selectedOpponent = `friend-${code}`;
+      opponentDeck = [
+        { emoji: "👾", name: "Freunds-Monster", rarity: "rare", attack: 12, defense: 8, hp: 30 },
+        { emoji: "🤖", name: "Robo-Kämpfer", rarity: "epic", attack: 18, defense: 12, hp: 40 },
+        { emoji: "🧙", name: "Zauberer", rarity: "legendary", attack: 22, defense: 15, hp: 35 }
+      ];
+      
+      closeFriendCodeModal();
+      renderOpponentDeck();
+      renderPlayerDeck();
+      showNotification(`Verbunden mit Freund: ${code}`);
+      
+      // Wähle die erste Gegner-Option als ausgewählt
+      document.querySelectorAll('.opponent-option').forEach(opt => opt.classList.remove('selected'));
+      document.querySelector('.opponent-option:last-child').classList.add('selected');
+    }
+    
+    // ========== GAME LOOP ==========
+    setInterval(() => {
+      const baseEPS = autoClicker + buildings.reduce((sum, b) => sum + (b.energyPerSecond * b.owned), 0);
+      if (baseEPS > 0) {
+        gainEnergy(baseEPS / 10);
+      }
+    }, 100);
+    
+    // Monster-Button Click
+    document.getElementById("monsterButton").addEventListener("click", () => {
+      totalClicks++;
+      gainEnergy(clickPower, true);
+      
+      const button = document.getElementById("monsterButton");
+      button.style.transform = "scale(0.9)";
+      setTimeout(() => {
+        button.style.transform = "scale(1)";
+      }, 100);
+    });
+    
+    // Initiales Rendern
+    updateDisplay();
+    renderCards();
+    renderBuildings();
+    renderUpgrades();
+    
+    // Speichern/Laden
+    function saveGame() {
+      const saveData = {
+        energy,
+        totalEnergy,
+        totalClicks,
+        clickPower,
+        autoClicker,
+        luckBonus,
+        energyMultiplier,
+        collectedMonsters,
+        playerDeck,
+        buildings: buildings.map(b => ({ id: b.id, owned: b.owned })),
+        upgrades: upgrades.map(u => ({ id: u.id, purchased: true }))
+      };
+      localStorage.setItem("monsterClickerSave", JSON.stringify(saveData));
+    }
+    
+    function loadGame() {
+      const saveData = localStorage.getItem("monsterClickerSave");
+      if (saveData) {
+        const data = JSON.parse(saveData);
+        energy = data.energy || 0;
+        totalEnergy = data.totalEnergy || 0;
+        totalClicks = data.totalClicks || 0;
+        clickPower = data.clickPower || 1;
+        autoClicker = data.autoClicker || 0;
+        luckBonus = data.luckBonus || 0;
+        energyMultiplier = data.energyMultiplier || 1;
+        collectedMonsters = data.collectedMonsters || [];
+        playerDeck = data.playerDeck || [null, null, null];
+        
+        // Gebäude laden
+        data.buildings?.forEach(b => {
+          const building = buildings.find(bl => bl.id === b.id);
+          if (building) building.owned = b.owned || 0;
+        });
+        
+        updateDisplay();
+        renderCards();
+        renderBuildings();
+        renderUpgrades();
+        renderAvailableMonstersForDeck();
+        renderPlayerDeck();
+      }
+    }
+    
+    // Automatisches Speichern alle 30 Sekunden
+    setInterval(saveGame, 30000);
+    
+    // Spiel laden
+    loadGame();
+    
+    // Fenster schließen speichern
+    window.addEventListener("beforeunload", saveGame);
+  </script>
+</body>
+</html>
