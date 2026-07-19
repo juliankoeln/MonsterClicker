@@ -845,9 +845,9 @@
   <!-- PvP-Arena-Tab -->
   <div id="arena-tab" class="tab-content">
     <div class="tabs">
-      <div class="tab active" onclick="switchArenaSubTab('deck')" id="arenaSubTabDeck">🃏 Karten wählen</div>
-      <div class="tab" onclick="switchArenaSubTab('opponent')" id="arenaSubTabOpponent">🎯 Gegner wählen</div>
-      <div class="tab" onclick="switchArenaSubTab('battle')" id="arenaSubTabBattle">⚔️ Kampf</div>
+      <div class="tab active" id="arenaSubTabDeck" style="cursor: default;">🃏 Karten wählen</div>
+      <div class="tab" id="arenaSubTabOpponent" style="cursor: default;">🎯 Gegner wählen</div>
+      <div class="tab" id="arenaSubTabBattle" style="cursor: default;">⚔️ Kampf</div>
     </div>
     
     <!-- Sub-Tab: Karten wählen -->
@@ -901,10 +901,6 @@
             <div class="deck-slot"></div>
             <div class="deck-slot"></div>
           </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 15px;">
-          <button class="battle-button" onclick="startBattle()" id="startBattleBtn" disabled>Kampf starten</button>
         </div>
       </div>
     </div>
@@ -1588,11 +1584,14 @@
         if (activeTab) activeTab.classList.add('active');
         document.getElementById(`${tabName}-tab`).classList.add('active');
         
-        // Bei Arena-Tab: Deck und Gegner aktualisieren
+        // Bei Arena-Tab: Deck und Gegner aktualisieren, immer bei Schritt 1 starten
         if (tabName === 'arena') {
           renderAvailableMonstersForDeck();
           renderPlayerDeck();
           renderOpponentDeck();
+          if (!currentBattle) {
+            switchArenaSubTab('deck');
+          }
         }
         
         // Bei Handel-Tab: Angebote und eigene Karten aktualisieren
@@ -1677,7 +1676,6 @@
       
       // Prüfen, ob alle Slots gefüllt sind
       const allFilled = playerDeck.every(m => m !== null);
-      document.getElementById("startBattleBtn").disabled = !allFilled || !selectedOpponent;
     }
     
     function renderOpponentDeck() {
@@ -1729,6 +1727,11 @@
       renderPlayerDeck();
       renderAvailableMonstersForDeck();
       showNotification(`✅ ${monster.name} zum Deck hinzugefügt!`);
+      
+      // Wenn alle 3 Plätze gefüllt sind: automatisch zur Gegner-Auswahl weiter
+      if (playerDeck.every(m => m !== null)) {
+        setTimeout(() => switchArenaSubTab('opponent'), 500);
+      }
     }
     
     function removeMonsterFromDeck(slotIndex) {
@@ -1757,8 +1760,13 @@
       }
       
       renderOpponentDeck();
-      renderPlayerDeck(); // Aktualisiere den Start-Button
+      renderPlayerDeck();
       showNotification(`Gegner ausgewählt: ${opponentId}`);
+      
+      // Bei KI-Gegnern automatisch weiter zum Kampf (Freund-Verbindung braucht noch den Code-Dialog)
+      if (opponentId.startsWith('ai-')) {
+        setTimeout(() => startBattle(), 500);
+      }
     }
     
     function startBattle() {
@@ -2103,6 +2111,8 @@
       // Wähle die erste Gegner-Option als ausgewählt
       document.querySelectorAll('.opponent-option').forEach(opt => opt.classList.remove('selected'));
       document.querySelector('.opponent-option:last-child').classList.add('selected');
+      
+      setTimeout(() => startBattle(), 500);
     }
     
     // ========== GAME LOOP ==========
