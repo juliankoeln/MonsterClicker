@@ -844,10 +844,15 @@
   
   <!-- PvP-Arena-Tab -->
   <div id="arena-tab" class="tab-content">
-    <div class="arena-container">
-      <!-- Dein Deck -->
-      <section class="arena-section">
-        <h2 class="arena-title">🃏 Dein Deck</h2>
+    <div class="tabs">
+      <div class="tab active" onclick="switchArenaSubTab('deck')" id="arenaSubTabDeck">🃏 Karten wählen</div>
+      <div class="tab" onclick="switchArenaSubTab('opponent')" id="arenaSubTabOpponent">🎯 Gegner wählen</div>
+      <div class="tab" onclick="switchArenaSubTab('battle')" id="arenaSubTabBattle">⚔️ Kampf</div>
+    </div>
+    
+    <!-- Sub-Tab: Karten wählen -->
+    <div id="arena-deck-subtab" class="tab-content active">
+      <div class="arena-section" style="max-width: 700px; margin: 0 auto;">
         <div class="deck-section">
           <div class="deck-title">Wähle 3 Monster für dein Deck:</div>
           <div class="deck-slots" id="playerDeck">
@@ -859,17 +864,14 @@
         
         <div class="deck-section">
           <div class="deck-title">Verfügbare Monster:</div>
-          <div class="cards-grid" id="availableMonstersForDeck"></div>
+          <div class="cards-grid" id="availableMonstersForDeck" style="grid-template-columns: repeat(2, 1fr); max-height: none;"></div>
         </div>
-        
-        <div style="text-align: center; margin-top: 15px;">
-          <button class="battle-button" onclick="startBattle()" id="startBattleBtn" disabled>Kampf starten</button>
-        </div>
-      </section>
-      
-      <!-- Gegner -->
-      <section class="arena-section">
-        <h2 class="arena-title">🎯 Gegner</h2>
+      </div>
+    </div>
+    
+    <!-- Sub-Tab: Gegner wählen -->
+    <div id="arena-opponent-subtab" class="tab-content">
+      <div class="arena-section" style="max-width: 700px; margin: 0 auto;">
         <div class="opponent-selector">
           <div class="opponent-title">Wähle einen Gegner:</div>
           <div class="opponent-options" id="opponentOptions">
@@ -900,71 +902,76 @@
             <div class="deck-slot"></div>
           </div>
         </div>
-      </section>
+        
+        <div style="text-align: center; margin-top: 15px;">
+          <button class="battle-button" onclick="startBattle()" id="startBattleBtn" disabled>Kampf starten</button>
+        </div>
+      </div>
     </div>
     
-    <!-- Kampfbereich (wird bei Kampfstart angezeigt) -->
-    <div id="battleArea" style="display: none; margin-top: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
-      <h2 class="arena-title">⚔️ Kampf</h2>
-      <div class="arena-container">
-        <!-- Spieler-Monster -->
-        <section class="arena-section">
-          <h3 style="text-align: center; color: var(--success); margin-bottom: 15px;">👤 Dein Monster</h3>
-          <div id="playerBattleMonster" style="text-align: center;">
-            <div style="font-size: 80px; margin-bottom: 10px;" id="playerMonsterEmoji">?</div>
-            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;" id="playerMonsterName">Wähle ein Monster</div>
-            <div class="monster-stats">
-              <div class="monster-stat">
-                <div class="monster-stat-label">❤️ HP</div>
-                <div class="monster-stat-value" id="playerMonsterHP">0</div>
-                <div class="hp-bar"><div class="hp-fill" id="playerHPBar" style="width: 100%;"></div></div>
-              </div>
-              <div class="monster-stat">
-                <div class="monster-stat-label">⚔️ Angriff</div>
-                <div class="monster-stat-value" id="playerMonsterAttack">0</div>
-              </div>
-              <div class="monster-stat">
-                <div class="monster-stat-label">🛡️ Verteidigung</div>
-                <div class="monster-stat-value" id="playerMonsterDefense">0</div>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- Gegner-Monster -->
-        <section class="arena-section">
-          <h3 style="text-align: center; color: var(--danger); margin-bottom: 15px;">🎯 Gegner-Monster</h3>
-          <div id="opponentBattleMonster" style="text-align: center;">
-            <div style="font-size: 80px; margin-bottom: 10px;" id="opponentMonsterEmoji">?</div>
-            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;" id="opponentMonsterName">Wähle Gegner</div>
-            <div class="monster-stats">
-              <div class="monster-stat">
-                <div class="monster-stat-label">❤️ HP</div>
-                <div class="monster-stat-value" id="opponentMonsterHP">0</div>
-                <div class="hp-bar"><div class="hp-fill" id="opponentHPBar" style="width: 100%;"></div></div>
-              </div>
-              <div class="monster-stat">
-                <div class="monster-stat-label">⚔️ Angriff</div>
-                <div class="monster-stat-value" id="opponentMonsterAttack">0</div>
-              </div>
-              <div class="monster-stat">
-                <div class="monster-stat-label">🛡️ Verteidigung</div>
-                <div class="monster-stat-value" id="opponentMonsterDefense">0</div>
+    <!-- Sub-Tab: Kampf -->
+    <div id="arena-battle-subtab" class="tab-content">
+      <div id="battleArea" style="max-width: 800px; margin: 0 auto;">
+        <div class="arena-container">
+          <!-- Spieler-Monster -->
+          <section class="arena-section">
+            <h3 style="text-align: center; color: var(--success); margin-bottom: 15px;">👤 Dein Monster</h3>
+            <div id="playerBattleMonster" style="text-align: center;">
+              <div style="font-size: 80px; margin-bottom: 10px;" id="playerMonsterEmoji">?</div>
+              <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;" id="playerMonsterName">Wähle ein Monster</div>
+              <div class="monster-stats">
+                <div class="monster-stat">
+                  <div class="monster-stat-label">❤️ HP</div>
+                  <div class="monster-stat-value" id="playerMonsterHP">0</div>
+                  <div class="hp-bar"><div class="hp-fill" id="playerHPBar" style="width: 100%;"></div></div>
+                </div>
+                <div class="monster-stat">
+                  <div class="monster-stat-label">⚔️ Angriff</div>
+                  <div class="monster-stat-value" id="playerMonsterAttack">0</div>
+                </div>
+                <div class="monster-stat">
+                  <div class="monster-stat-label">🛡️ Verteidigung</div>
+                  <div class="monster-stat-value" id="playerMonsterDefense">0</div>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      </div>
-      
-      <div class="battle-section">
-        <div class="battle-controls">
-          <button class="battle-button" onclick="playerAttack()" id="attackBtn" disabled>🔥 Angreifen</button>
-          <button class="battle-button" onclick="playerDefend()" id="defendBtn" disabled>🛡️ Verteidigen</button>
-          <button class="battle-button" onclick="endBattle()" id="endBattleBtn">❌ Kampf beenden</button>
+          </section>
+          
+          <!-- Gegner-Monster -->
+          <section class="arena-section">
+            <h3 style="text-align: center; color: var(--danger); margin-bottom: 15px;">🎯 Gegner-Monster</h3>
+            <div id="opponentBattleMonster" style="text-align: center;">
+              <div style="font-size: 80px; margin-bottom: 10px;" id="opponentMonsterEmoji">?</div>
+              <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;" id="opponentMonsterName">Wähle Gegner</div>
+              <div class="monster-stats">
+                <div class="monster-stat">
+                  <div class="monster-stat-label">❤️ HP</div>
+                  <div class="monster-stat-value" id="opponentMonsterHP">0</div>
+                  <div class="hp-bar"><div class="hp-fill" id="opponentHPBar" style="width: 100%;"></div></div>
+                </div>
+                <div class="monster-stat">
+                  <div class="monster-stat-label">⚔️ Angriff</div>
+                  <div class="monster-stat-value" id="opponentMonsterAttack">0</div>
+                </div>
+                <div class="monster-stat">
+                  <div class="monster-stat-label">🛡️ Verteidigung</div>
+                  <div class="monster-stat-value" id="opponentMonsterDefense">0</div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
         
-        <div class="battle-log" id="battleLog">
-          <div class="log-entry info">Wähle ein Monster und einen Gegner, um den Kampf zu starten.</div>
+        <div class="battle-section">
+          <div class="battle-controls">
+            <button class="battle-button" onclick="playerAttack()" id="attackBtn" disabled>🔥 Angreifen</button>
+            <button class="battle-button" onclick="playerDefend()" id="defendBtn" disabled>🛡️ Verteidigen</button>
+            <button class="battle-button" onclick="endBattle()" id="endBattleBtn">❌ Kampf beenden</button>
+          </div>
+          
+          <div class="battle-log" id="battleLog">
+            <div class="log-entry info">Wähle ein Monster und einen Gegner, um den Kampf zu starten.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -972,13 +979,17 @@
   
   <!-- Handel-Tab -->
   <div id="trade-tab" class="tab-content">
-    <div class="arena-container">
-      <!-- Angebot erstellen -->
-      <section class="arena-section">
-        <h2 class="arena-title">📤 Angebot erstellen</h2>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTradeSubTab('create')" id="tradeSubTabCreate">📤 Angebot erstellen</div>
+      <div class="tab" onclick="switchTradeSubTab('offers')" id="tradeSubTabOffers">📋 Offene Angebote</div>
+    </div>
+    
+    <!-- Sub-Tab: Angebot erstellen -->
+    <div id="trade-create-subtab" class="tab-content active">
+      <div class="collection-section" style="max-width: 900px; margin: 0 auto;">
         <div class="deck-section">
           <div class="deck-title">Karte zum Anbieten wählen:</div>
-          <div class="cards-grid" id="tradeOfferCardGrid" style="max-height: 300px;"></div>
+          <div class="cards-grid" id="tradeOfferCardGrid" style="grid-template-columns: repeat(2, 1fr); max-height: none;"></div>
         </div>
         <div class="deck-section">
           <div class="deck-title">Gewünschtes Monster im Tausch:</div>
@@ -987,13 +998,14 @@
         <div style="text-align: center; margin-top: 15px;">
           <button class="battle-button" onclick="createTradeOffer()">Angebot erstellen</button>
         </div>
-      </section>
-      
-      <!-- Offene Angebote -->
-      <section class="arena-section">
-        <h2 class="arena-title">📋 Offene Angebote</h2>
-        <div id="openTradeOffers" style="max-height: 500px; overflow-y: auto;"></div>
-      </section>
+      </div>
+    </div>
+    
+    <!-- Sub-Tab: Offene Angebote -->
+    <div id="trade-offers-subtab" class="tab-content">
+      <div class="collection-section" style="max-width: 900px; margin: 0 auto;">
+        <div id="openTradeOffers"></div>
+      </div>
     </div>
   </div>
   
@@ -1596,6 +1608,39 @@
       }
     }
     
+    // Umschalten zwischen den Unter-Reitern in der PvP-Arena
+    function switchArenaSubTab(subTabName) {
+      document.getElementById("arena-deck-subtab").classList.toggle("active", subTabName === "deck");
+      document.getElementById("arena-opponent-subtab").classList.toggle("active", subTabName === "opponent");
+      document.getElementById("arena-battle-subtab").classList.toggle("active", subTabName === "battle");
+      document.getElementById("arenaSubTabDeck").classList.toggle("active", subTabName === "deck");
+      document.getElementById("arenaSubTabOpponent").classList.toggle("active", subTabName === "opponent");
+      document.getElementById("arenaSubTabBattle").classList.toggle("active", subTabName === "battle");
+      
+      if (subTabName === "deck") {
+        renderAvailableMonstersForDeck();
+        renderPlayerDeck();
+      } else if (subTabName === "opponent") {
+        renderOpponentDeck();
+        renderPlayerDeck();
+      }
+    }
+    
+    // Umschalten zwischen den Unter-Reitern im Handel-Tab
+    function switchTradeSubTab(subTabName) {
+      document.getElementById("trade-create-subtab").classList.toggle("active", subTabName === "create");
+      document.getElementById("trade-offers-subtab").classList.toggle("active", subTabName === "offers");
+      document.getElementById("tradeSubTabCreate").classList.toggle("active", subTabName === "create");
+      document.getElementById("tradeSubTabOffers").classList.toggle("active", subTabName === "offers");
+      
+      if (subTabName === "create") {
+        renderTradeOfferCardGrid();
+        renderTradeWantSelect();
+      } else {
+        renderTradeOffers();
+      }
+    }
+    
     // ========== PVP-ARENA FUNKTIONEN ==========
     function renderAvailableMonstersForDeck() {
       const grid = document.getElementById("availableMonstersForDeck");
@@ -1727,8 +1772,8 @@
         return;
       }
       
-      // Kampfbereich anzeigen
-      document.getElementById("battleArea").style.display = "block";
+      // Zum Kampf-Reiter wechseln
+      switchArenaSubTab('battle');
       
       // Monster-Auswahl Modal öffnen
       openMonsterSelectModal();
@@ -1981,7 +2026,6 @@
       
       // Kampf zurücksetzen
       currentBattle = null;
-      document.getElementById("battleArea").style.display = "none";
       document.getElementById("attackBtn").disabled = true;
       document.getElementById("defendBtn").disabled = true;
       
@@ -1999,6 +2043,9 @@
       document.getElementById("opponentMonsterAttack").textContent = "0";
       document.getElementById("opponentMonsterDefense").textContent = "0";
       document.getElementById("opponentHPBar").style.width = "100%";
+      
+      // Zurück zum Anfang: Karten-Reiter
+      switchArenaSubTab('deck');
     }
     
     function addToLog(type, message) {
@@ -2123,24 +2170,17 @@
         if (!template) return;
         
         const el = document.createElement("div");
-        el.className = `card rarity-${template.rarity}${template.image ? " has-image" : ""}${card.shiny ? " shiny" : ""}${selectedTradeCard && selectedTradeCard.id === card.id ? " selected" : ""}`;
+        const isSelected = selectedTradeCard && selectedTradeCard.id === card.id;
+        el.className = `card rarity-${template.rarity}${template.image ? " has-image" : ""}${card.shiny ? " shiny" : ""}${isSelected ? " selected" : ""}`;
         el.style.cursor = "pointer";
         el.onclick = () => {
           selectedTradeCard = card;
           renderTradeOfferCardGrid();
         };
         
-        const shinyBadgeHTML = card.shiny ? `<div class="shiny-badge">🌟 Shiny</div>` : "";
-        el.innerHTML = `
-          ${template.image ? `<img src="${template.image}" class="card-bg-image" alt="${template.name}">` : `<div class="emoji">${template.emoji}</div>`}
-          ${shinyBadgeHTML}
-          <div class="serial-badge">#${card.serial}</div>
-          <div class="${template.image ? "card-overlay" : ""}">
-            ${template.image ? "" : ""}
-            <div class="name">${template.name}</div>
-            <div class="stats">⚔️${template.attack} 🛡️${template.defense} ❤️${template.hp}</div>
-          </div>
-        `;
+        el.innerHTML = cardBodyHTML({ ...template, hasShiny: card.shiny }, false)
+          + `<div class="serial-badge">#${card.serial}</div>`;
+        
         grid.appendChild(el);
       });
       
