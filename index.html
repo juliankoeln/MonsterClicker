@@ -859,6 +859,34 @@
           <div class="stat-label">Klick-Stärke</div>
         </div>
       </section>
+      
+      <!-- Prestige & Test-Tools -->
+      <section class="stats-section" style="flex-direction: column; gap: 12px;">
+        <h2 style="color: var(--accent); text-align: center;">⭐ Prestige &amp; Test-Tools</h2>
+        <div style="text-align: center; opacity: 0.85;">
+          Prestige-Level <strong><span id="prestigeLevelDisplay">0</span></strong> (dauerhafter Bonus: +<span id="prestigeBonusDisplay">0</span>% Energie)
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+          <button class="battle-button" onclick="prestigeGame()" id="prestigeBtn" disabled>⭐ Prestige (ab 1000 Energie)</button>
+          <button class="battle-button" onclick="giveAllCardsTest()" style="background: var(--rare);">🎴 Alle Karten geben (Test)</button>
+          <button class="battle-button" onclick="resetGameProgress()" style="background: var(--danger);">🔄 Spiel zurücksetzen (Test)</button>
+        </div>
+        <div style="text-align: center; font-size: 0.8em; opacity: 0.6;">
+          Zurücksetzen &amp; Prestige betreffen nur Energie/Gebäude/Upgrades. Karten und Monster-Gold bleiben erhalten.
+        </div>
+      </section>
+      
+      <!-- Kristall-Shop -->
+      <section class="stats-section" style="flex-direction: column; gap: 12px;">
+        <h2 style="color: var(--rare); text-align: center;">💎 Kristall-Shop</h2>
+        <div style="text-align: center; font-size: 1.2em; color: var(--rare); font-weight: bold;">
+          <span id="monsterCrystals">0</span> 💎 Monster-Kristalle
+        </div>
+        <div style="text-align: center;">
+          <button class="battle-button" onclick="convertGoldToCrystal()" id="convertGoldBtn" disabled>1000 🪙 → 1 💎 umtauschen</button>
+        </div>
+        <div id="shopUpgradesList" style="width: 100%; max-width: 700px; margin: 0 auto;"></div>
+      </section>
     </div>
   </div>
   
@@ -1220,6 +1248,15 @@
     let currentTradeType = "barter";
     let monsterGold = 0;
     let goldClaimedFromEnergy = Number(localStorage.getItem("monsterClickerGoldClaimed")) || 0;
+    let prestigeLevel = Number(localStorage.getItem("monsterClickerPrestige")) || 0;
+    let monsterCrystals = 0;
+    let shopBonuses = { shiny: 0, energy: 0, click: 0 };
+    
+    const shopUpgrades = [
+      { id: "shinyAmulett", name: "Kristall-Amulett", cost: 3, description: "+2% Shiny-Chance – dauerhaft, übersteht Prestige & Reset", bonusKey: "shiny", bonusAmount: 0.02 },
+      { id: "energyCrystal", name: "Energie-Kristall", cost: 5, description: "+25% Energie-Gewinn – dauerhaft, übersteht Prestige & Reset", bonusKey: "energy", bonusAmount: 0.25 },
+      { id: "clickCrown", name: "Kristall-Krone", cost: 2, description: "+2 Klick-Stärke – dauerhaft, übersteht Prestige & Reset", bonusKey: "click", bonusAmount: 2 }
+    ];
     
     // Sicherheitsfunktion: Setze alle Variablen auf Standardwerte zurück
     function resetGameState() {
@@ -1285,6 +1322,20 @@
         const goldEl = document.getElementById("monsterGold");
         if (goldEl) goldEl.textContent = monsterGold;
         renderTradeOffers();
+        updateShopDisplay();
+      });
+      
+      db.ref(`players/${currentUid}/crystals`).on("value", snapshot => {
+        monsterCrystals = snapshot.val() || 0;
+        updateShopDisplay();
+      });
+      
+      db.ref(`players/${currentUid}/shopBonuses`).on("value", snapshot => {
+        const data = snapshot.val() || {};
+        shopBonuses.shiny = data.shiny || 0;
+        shopBonuses.energy = data.energy || 0;
+        shopBonuses.click = data.click || 0;
+        updateShopDisplay();
       });
     }
     
@@ -1335,10 +1386,10 @@
     }
     
     // Vergibt eine Karte an den Spieler mit global fortlaufender Nummer + Shiny-Chance
-    async function awardCardToPlayer(monsterTemplate) {
+    async function awardCardToPlayer(monsterTemplate, silent = false) {
       if (!currentUid) return;
       
-      const isShiny = Math.random() < 0.02; // 2% Shiny-Chance
+      const isShiny = Math.random() < (0.02 + shopBonuses.shiny); // Basis 2% + Shop-Bonus
       
       try {
         const counterRef = db.ref(`globalCounters/${slugify(monsterTemplate.name)}`);
@@ -1353,7 +1404,9 @@
           obtainedAt: Date.now()
         });
         
-        showNotification(`✨ Du hast ${monsterTemplate.emoji} ${monsterTemplate.name} erhalten! (#${serial}${isShiny ? " 🌟SHINY" : ""})`);
+        if (!silent) {
+          showNotification(`✨ Du hast ${monsterTemplate.emoji} ${monsterTemplate.name} erhalten! (#${serial}${isShiny ? " 🌟SHINY" : ""})`);
+        }
       } catch (err) {
         console.error("Fehler beim Speichern der Karte:", err);
         showNotification("⚠️ Karte konnte nicht gespeichert werden (Verbindungsproblem)");
@@ -1414,6 +1467,173 @@
       updateEnergyPerSecond();
       updateBuyButtonStates();
       checkGoldFromEnergy();
+      updatePrestigeDisplay();
+      updateShopDisplay();
+    }
+    
+    // Aktualisiert Prestige-Anzeige und ob der Button klickbar ist
+    function updatePrestigeDisplay() {
+      const levelEl = document.getElementById("prestigeLevelDisplay");
+      const bonusEl = document.getElementById("prestigeBonusDisplay");
+      const btn = document.getElementById("prestigeBtn");
+      if (levelEl) levelEl.textContent = prestigeLevel;
+      if (bonusEl) bonusEl.textContent = (prestigeLevel * 10);
+      if (btn) btn.disabled = totalEnergy < 1000;
+    }
+    
+    // Prestige: Energie/Gebäude/Upgrades zurücksetzen, dafür dauerhaft +10% Energie pro Stufe
+    function prestigeGame() {
+      if (totalEnergy < 1000) {
+        showNotification("Du brauchst mindestens 1000 Gesamt-Energie für Prestige!");
+        return;
+      }
+      
+      const confirmed = confirm(
+        `Prestige durchführen?\n\nEnergie, Gebäude und Upgrades werden zurückgesetzt.\nDu erhältst dafür einen dauerhaften +10% Energie-Bonus (Level ${prestigeLevel} → ${prestigeLevel + 1}).\n\nKarten und Monster-Gold bleiben erhalten.`
+      );
+      if (!confirmed) return;
+      
+      prestigeLevel++;
+      localStorage.setItem("monsterClickerPrestige", prestigeLevel);
+      
+      energy = 0;
+      totalEnergy = 0;
+      totalClicks = 0;
+      clickPower = 1;
+      autoClicker = 0;
+      luckBonus = 0;
+      energyMultiplier = 1;
+      buildings.forEach(b => b.owned = 0);
+      goldClaimedFromEnergy = 0;
+      localStorage.setItem("monsterClickerGoldClaimed", 0);
+      
+      saveGame();
+      updateDisplay();
+      renderBuildings();
+      renderUpgrades();
+      showNotification(`✨ Prestige Level ${prestigeLevel}! Dauerhafter Bonus: +${prestigeLevel * 10}% Energie`);
+    }
+    
+    // Test-Tool: Setzt Energie/Gebäude/Upgrades/Prestige zurück (Karten & Gold bleiben)
+    function resetGameProgress() {
+      const confirmed = confirm(
+        "Spiel wirklich zurücksetzen?\n\nEnergie, Gebäude, Upgrades UND Prestige-Level gehen verloren.\nKarten und Monster-Gold bleiben erhalten."
+      );
+      if (!confirmed) return;
+      
+      energy = 0;
+      totalEnergy = 0;
+      totalClicks = 0;
+      clickPower = 1;
+      autoClicker = 0;
+      luckBonus = 0;
+      energyMultiplier = 1;
+      buildings.forEach(b => b.owned = 0);
+      prestigeLevel = 0;
+      localStorage.setItem("monsterClickerPrestige", 0);
+      goldClaimedFromEnergy = 0;
+      localStorage.setItem("monsterClickerGoldClaimed", 0);
+      localStorage.removeItem("monsterClickerSave");
+      
+      updateDisplay();
+      renderBuildings();
+      renderUpgrades();
+      showNotification("🔄 Spiel zurückgesetzt!");
+    }
+    
+    // ========== KRISTALL-SHOP ==========
+    function updateShopDisplay() {
+      const crystalsEl = document.getElementById("monsterCrystals");
+      if (crystalsEl) crystalsEl.textContent = monsterCrystals;
+      
+      const convertBtn = document.getElementById("convertGoldBtn");
+      if (convertBtn) convertBtn.disabled = monsterGold < 1000;
+      
+      const list = document.getElementById("shopUpgradesList");
+      if (!list) return;
+      list.innerHTML = "";
+      
+      shopUpgrades.forEach(upgrade => {
+        const currentBonus = shopBonuses[upgrade.bonusKey] || 0;
+        const div = document.createElement("div");
+        div.className = "upgrade";
+        div.innerHTML = `
+          <div class="upgrade-info">
+            <div class="upgrade-name">${upgrade.name}</div>
+            <div style="font-size: 0.9em; color: var(--text); opacity: 0.7;">${upgrade.description}</div>
+            <div class="upgrade-cost">Kosten: ${upgrade.cost} 💎 | Aktueller Bonus: ${upgrade.bonusKey === "click" ? "+" + currentBonus : "+" + Math.round(currentBonus * 100) + "%"}</div>
+          </div>
+          <button class="buy-button" onclick="buyShopUpgrade('${upgrade.id}')" ${monsterCrystals < upgrade.cost ? "disabled" : ""}>
+            Kaufen
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+    
+    async function convertGoldToCrystal() {
+      if (monsterGold < 1000) {
+        showNotification("Du brauchst 1000 Monster-Gold für einen Kristall!");
+        return;
+      }
+      if (!currentUid || !db) {
+        showNotification("Keine Verbindung zum Server.");
+        return;
+      }
+      
+      try {
+        await db.ref(`players/${currentUid}/gold`).transaction(g => (g || 0) - 1000);
+        await db.ref(`players/${currentUid}/crystals`).transaction(c => (c || 0) + 1);
+        showNotification("💎 1 Monster-Kristall erhalten!");
+      } catch (err) {
+        console.error("Fehler beim Umtausch:", err);
+        showNotification("⚠️ Umtausch fehlgeschlagen");
+      }
+    }
+    
+    async function buyShopUpgrade(id) {
+      const upgrade = shopUpgrades.find(u => u.id === id);
+      if (!upgrade) return;
+      
+      if (monsterCrystals < upgrade.cost) {
+        showNotification("Nicht genug Monster-Kristalle!");
+        return;
+      }
+      if (!currentUid || !db) {
+        showNotification("Keine Verbindung zum Server.");
+        return;
+      }
+      
+      try {
+        await db.ref(`players/${currentUid}/crystals`).transaction(c => (c || 0) - upgrade.cost);
+        await db.ref(`players/${currentUid}/shopBonuses/${upgrade.bonusKey}`).transaction(v => (v || 0) + upgrade.bonusAmount);
+        showNotification(`💎 ${upgrade.name} gekauft!`);
+      } catch (err) {
+        console.error("Fehler beim Kauf:", err);
+        showNotification("⚠️ Kauf fehlgeschlagen");
+      }
+    }
+    
+    // Test-Tool: Gibt alle noch fehlenden Sammelkarten (zum Testen von Sammelalbum & Handel)
+    async function giveAllCardsTest() {
+      if (!currentUid || !db) {
+        showNotification("Keine Verbindung zum Server.");
+        return;
+      }
+      
+      const owned = new Set(myCards.map(c => c.monsterName));
+      const missing = monsters.filter(m => !owned.has(m.name));
+      
+      if (missing.length === 0) {
+        showNotification("Du hast schon alle Karten!");
+        return;
+      }
+      
+      for (const m of missing) {
+        await awardCardToPlayer(m, true);
+      }
+      
+      showNotification(`🎴 ${missing.length} fehlende Karten hinzugefügt!`);
     }
     
     // Alle 4000 gesammelte Energie-Punkte (Klick + passiv) gibt es 1 Monster-Gold
@@ -1446,7 +1666,7 @@
     
     function updateEnergyPerSecond() {
       const baseEPS = autoClicker + buildings.reduce((sum, b) => sum + (b.energyPerSecond * b.owned), 0);
-      document.getElementById("energyPerSecond").textContent = (baseEPS * energyMultiplier).toFixed(1);
+      document.getElementById("energyPerSecond").textContent = (baseEPS * energyMultiplier * (1 + prestigeLevel * 0.1)).toFixed(1);
       return baseEPS;
     }
     
@@ -1457,8 +1677,8 @@
       if (isNaN(totalEnergy)) totalEnergy = 0;
       if (isNaN(energyMultiplier)) energyMultiplier = 1;
       
-      // Energie aktualisieren
-      const energyGain = amount * energyMultiplier;
+      // Energie aktualisieren (inkl. dauerhaftem Prestige-Bonus)
+      const energyGain = amount * energyMultiplier * (1 + prestigeLevel * 0.1) * (1 + shopBonuses.energy);
       energy += energyGain;
       totalEnergy += energyGain;
       
@@ -2218,7 +2438,7 @@
     // Monster-Button Click
     document.getElementById("monsterButton").addEventListener("click", () => {
       totalClicks++;
-      gainEnergy(clickPower, true);
+      gainEnergy(clickPower + shopBonuses.click, true);
       spawnConfetti();
       
       const button = document.getElementById("monsterButton");
