@@ -1042,26 +1042,8 @@
     <div id="trade-create-subtab" class="tab-content active">
       <div class="collection-section" style="max-width: 900px; margin: 0 auto;">
         <div class="deck-section">
-          <div class="deck-title">Karte zum Anbieten wählen:</div>
+          <div class="deck-title">Tippe eine Karte an, um sie anzubieten:</div>
           <div class="cards-grid" id="tradeOfferCardGrid" style="grid-template-columns: repeat(2, 1fr); max-height: none;"></div>
-        </div>
-        <div class="deck-section">
-          <div class="deck-title">Art des Angebots:</div>
-          <div style="display: flex; gap: 10px;">
-            <div class="opponent-option" id="tradeTypeBarter" onclick="setTradeType('barter')" style="flex: 1; justify-content: center;">🔄 Tauschen</div>
-            <div class="opponent-option" id="tradeTypeSale" onclick="setTradeType('sale')" style="flex: 1; justify-content: center;">🪙 Verkaufen</div>
-          </div>
-        </div>
-        <div class="deck-section" id="tradeWantSection">
-          <div class="deck-title">Gewünschtes Monster im Tausch:</div>
-          <select id="tradeWantSelect" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--text);"></select>
-        </div>
-        <div class="deck-section" id="tradePriceSection" style="display: none;">
-          <div class="deck-title">Preis in Monster-Gold:</div>
-          <input type="number" id="tradePriceInput" min="1" value="10" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--text);">
-        </div>
-        <div style="text-align: center; margin-top: 15px;">
-          <button class="battle-button" onclick="createTradeOffer()">Angebot erstellen</button>
         </div>
       </div>
     </div>
@@ -1118,6 +1100,31 @@
     <div class="modal-content" style="max-width: 380px; padding: 0; overflow: hidden;">
       <span class="modal-close" onclick="closeMonsterDetailModal()" style="z-index: 10; background: rgba(0,0,0,0.5); border-radius: 50%; width: 34px; height: 34px;">&times;</span>
       <div id="monsterDetailBody"></div>
+    </div>
+  </div>
+  
+  <!-- Modal für Handelsangebot erstellen -->
+  <div id="tradeOfferModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; padding: 0; overflow: hidden;">
+      <span class="modal-close" onclick="closeTradeOfferModal()" style="z-index: 10; background: rgba(0,0,0,0.5); border-radius: 50%; width: 34px; height: 34px;">&times;</span>
+      <div id="tradeOfferModalBody"></div>
+      <div style="padding: 5px 20px 20px;">
+        <div class="deck-title">Art des Angebots:</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div class="opponent-option" id="modalTypeBarter" onclick="setModalTradeType('barter')" style="flex: 1; justify-content: center; padding: 8px 4px; text-align: center;">🔄 Tausch</div>
+          <div class="opponent-option" id="modalTypeGold" onclick="setModalTradeType('gold')" style="flex: 1; justify-content: center; padding: 8px 4px; text-align: center;">🪙 Gold</div>
+          <div class="opponent-option" id="modalTypeCrystal" onclick="setModalTradeType('crystal')" style="flex: 1; justify-content: center; padding: 8px 4px; text-align: center;">💎 Kristalle</div>
+        </div>
+        <div id="modalWantSection">
+          <select id="tradeWantSelect" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--text);"></select>
+        </div>
+        <div id="modalPriceSection" style="display: none;">
+          <input type="number" id="tradePriceInput" min="1" value="10" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--text);">
+        </div>
+        <div style="text-align: center; margin-top: 15px;">
+          <button class="battle-button" onclick="submitTradeOfferFromModal()">Angebot erstellen</button>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -1918,8 +1925,6 @@
       
       if (subTabName === "create") {
         renderTradeOfferCardGrid();
-        renderTradeWantSelect();
-        setTradeType(currentTradeType);
       } else {
         renderTradeOffers();
       }
@@ -2465,13 +2470,9 @@
         if (!template) return;
         
         const el = document.createElement("div");
-        const isSelected = selectedTradeCard && selectedTradeCard.id === card.id;
-        el.className = `card rarity-${template.rarity}${template.image ? " has-image" : ""}${card.shiny ? " shiny" : ""}${isSelected ? " selected" : ""}`;
+        el.className = `card rarity-${template.rarity}${template.image ? " has-image" : ""}${card.shiny ? " shiny" : ""}`;
         el.style.cursor = "pointer";
-        el.onclick = () => {
-          selectedTradeCard = card;
-          renderTradeOfferCardGrid();
-        };
+        el.onclick = () => openTradeOfferModal(card);
         
         el.innerHTML = cardBodyHTML({ ...template, hasShiny: card.shiny }, false)
           + `<div class="serial-badge">#${card.serial}</div>`;
@@ -2491,12 +2492,70 @@
     }
     
     // Umschalten zwischen Tausch- und Verkaufsangebot
-    function setTradeType(type) {
+    let tradeOfferModalCard = null;
+    
+    // Öffnet das Popup zum Erstellen eines Angebots für eine bestimmte Karte
+    function openTradeOfferModal(card) {
+      tradeOfferModalCard = card;
+      const template = monsters.find(m => m.name === card.monsterName);
+      if (!template) return;
+      
+      const body = document.getElementById("tradeOfferModalBody");
+      const rarityLabel = template.rarity.charAt(0).toUpperCase() + template.rarity.slice(1);
+      const shinyLine = card.shiny ? `<div style="color: #ffd700; font-weight: bold; margin-top: 5px;">🌟 SHINY</div>` : "";
+      
+      if (template.image) {
+        body.innerHTML = `
+          <img src="${template.image}" alt="${template.name}" style="width: 100%; display: block; max-height: 260px; object-fit: cover;">
+          <div style="padding: 15px 20px 0; text-align: center;">
+            <div class="rarity rarity-${template.rarity}" style="margin-bottom: 6px;">${rarityLabel}</div>
+            <div style="font-size: 1.3em; font-weight: bold;">${template.name} #${card.serial}</div>
+            <div class="stats" style="opacity: 1; margin-top: 4px;">⚔️${template.attack} 🛡️${template.defense} ❤️${template.hp}</div>
+            ${shinyLine}
+          </div>
+        `;
+      } else {
+        body.innerHTML = `
+          <div style="padding: 25px 20px 0; text-align: center;">
+            <div style="font-size: 90px;">${template.emoji}</div>
+            <div class="rarity rarity-${template.rarity}" style="margin-bottom: 6px;">${rarityLabel}</div>
+            <div style="font-size: 1.3em; font-weight: bold;">${template.name} #${card.serial}</div>
+            <div class="stats" style="opacity: 1; margin-top: 4px;">⚔️${template.attack} 🛡️${template.defense} ❤️${template.hp}</div>
+            ${shinyLine}
+          </div>
+        `;
+      }
+      
+      renderTradeWantSelect();
+      setModalTradeType(currentTradeType || "barter");
+      document.getElementById("tradeOfferModal").classList.add("active");
+    }
+    
+    function closeTradeOfferModal() {
+      document.getElementById("tradeOfferModal").classList.remove("active");
+      tradeOfferModalCard = null;
+    }
+    
+    // Umschalten zwischen Tausch-, Gold- und Kristall-Angebot im Popup
+    function setModalTradeType(type) {
       currentTradeType = type;
-      document.getElementById("tradeTypeBarter").classList.toggle("selected", type === "barter");
-      document.getElementById("tradeTypeSale").classList.toggle("selected", type === "sale");
-      document.getElementById("tradeWantSection").style.display = type === "barter" ? "block" : "none";
-      document.getElementById("tradePriceSection").style.display = type === "sale" ? "block" : "none";
+      document.getElementById("modalTypeBarter").classList.toggle("selected", type === "barter");
+      document.getElementById("modalTypeGold").classList.toggle("selected", type === "gold");
+      document.getElementById("modalTypeCrystal").classList.toggle("selected", type === "crystal");
+      document.getElementById("modalWantSection").style.display = type === "barter" ? "block" : "none";
+      document.getElementById("modalPriceSection").style.display = type !== "barter" ? "block" : "none";
+      
+      const priceInput = document.getElementById("tradePriceInput");
+      if (priceInput) {
+        priceInput.placeholder = type === "crystal" ? "Preis in Kristallen" : "Preis in Monster-Gold";
+      }
+    }
+    
+    async function submitTradeOfferFromModal() {
+      if (!tradeOfferModalCard) return;
+      selectedTradeCard = tradeOfferModalCard;
+      await createTradeOffer();
+      closeTradeOfferModal();
     }
     
     async function createTradeOffer() {
@@ -2516,20 +2575,21 @@
         offerMonster: selectedTradeCard.monsterName,
         offerSerial: selectedTradeCard.serial,
         offerShiny: !!selectedTradeCard.shiny,
-        type: currentTradeType,
+        type: currentTradeType === "barter" ? "barter" : "sale",
         status: "open",
         createdAt: Date.now()
       };
       
-      if (currentTradeType === "sale") {
+      if (currentTradeType === "barter") {
+        offerData.wantMonster = document.getElementById("tradeWantSelect").value;
+      } else {
         const price = parseInt(document.getElementById("tradePriceInput").value, 10);
         if (!price || price < 1) {
           showNotification("Bitte einen gültigen Preis eingeben!");
           return;
         }
         offerData.price = price;
-      } else {
-        offerData.wantMonster = document.getElementById("tradeWantSelect").value;
+        offerData.currency = currentTradeType; // "gold" oder "crystal"
       }
       
       try {
@@ -2560,9 +2620,11 @@
         const offerTemplate = monsters.find(m => m.name === offer.offerMonster);
         const isOwn = offer.fromUid === currentUid;
         const isSale = offer.type === "sale";
+        const currencyIcon = offer.currency === "crystal" ? "💎" : "🪙";
+        const currencyName = offer.currency === "crystal" ? "Kristalle" : "Monster-Gold";
         
         const wantLabelHTML = isSale
-          ? `Preis: <strong>${offer.price} 🪙</strong> Monster-Gold`
+          ? `Preis: <strong>${offer.price} ${currencyIcon}</strong> ${currencyName}`
           : (() => {
               const wantTemplate = monsters.find(m => m.name === offer.wantMonster);
               return `Möchte dafür: ${wantTemplate ? wantTemplate.emoji : ""} ${offer.wantMonster}`;
@@ -2584,8 +2646,9 @@
           btn.textContent = "Zurückziehen";
           btn.onclick = () => cancelTradeOffer(offer.id);
         } else if (isSale) {
-          btn.textContent = `Kaufen (${offer.price} 🪙)`;
-          btn.disabled = monsterGold < offer.price;
+          const myBalance = offer.currency === "crystal" ? monsterCrystals : monsterGold;
+          btn.textContent = `Kaufen (${offer.price} ${currencyIcon})`;
+          btn.disabled = myBalance < offer.price;
           btn.onclick = () => buyTradeOffer(offer);
         } else {
           const iOwnWanted = myCards.some(c => c.monsterName === offer.wantMonster);
@@ -2642,8 +2705,13 @@
     }
     
     async function buyTradeOffer(offer) {
-      if (monsterGold < offer.price) {
-        showNotification("Nicht genug Monster-Gold!");
+      const balanceField = offer.currency === "crystal" ? "crystals" : "gold";
+      const myBalance = offer.currency === "crystal" ? monsterCrystals : monsterGold;
+      const currencyName = offer.currency === "crystal" ? "Kristalle" : "Monster-Gold";
+      const currencyIcon = offer.currency === "crystal" ? "💎" : "🪙";
+      
+      if (myBalance < offer.price) {
+        showNotification(`Nicht genug ${currencyName}!`);
         return;
       }
       
@@ -2659,10 +2727,10 @@
         updates[`tradeOffers/${offer.id}/status`] = "completed";
         
         await db.ref().update(updates);
-        await db.ref(`players/${currentUid}/gold`).transaction(g => (g || 0) - offer.price);
-        await db.ref(`players/${offer.fromUid}/gold`).transaction(g => (g || 0) + offer.price);
+        await db.ref(`players/${currentUid}/${balanceField}`).transaction(v => (v || 0) - offer.price);
+        await db.ref(`players/${offer.fromUid}/${balanceField}`).transaction(v => (v || 0) + offer.price);
         
-        showNotification(`🪙 Gekauft für ${offer.price} Monster-Gold!`);
+        showNotification(`${currencyIcon} Gekauft für ${offer.price} ${currencyName}!`);
       } catch (err) {
         console.error("Fehler beim Kauf:", err);
         showNotification("⚠️ Kauf fehlgeschlagen (Verbindungsproblem)");
