@@ -374,7 +374,7 @@
       color: #1a1a2e;
     }
     
-    .card.mythic-border {
+    .mythic-border {
       border: 3px solid #d8f0ff;
       box-shadow: 0 0 18px rgba(200, 235, 255, 0.7), 0 0 36px rgba(160, 210, 255, 0.4);
       animation: diamondPulse 1.8s ease-in-out infinite;
@@ -386,6 +386,21 @@
       }
       50% {
         box-shadow: 0 0 28px rgba(220, 245, 255, 1), 0 0 50px rgba(180, 220, 255, 0.7);
+      }
+    }
+    
+    .epic-border {
+      border: 3px solid #ffd700;
+      box-shadow: 0 0 16px rgba(255, 215, 0, 0.7), 0 0 32px rgba(255, 195, 0, 0.4);
+      animation: goldPulse 1.8s ease-in-out infinite;
+    }
+    
+    @keyframes goldPulse {
+      0%, 100% {
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.5), 0 0 24px rgba(255, 195, 0, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 26px rgba(255, 215, 0, 0.95), 0 0 46px rgba(255, 195, 0, 0.6);
       }
     }
     
@@ -1173,7 +1188,7 @@
   
   <!-- Modal für Karten-Detailansicht -->
   <div id="monsterDetailModal" class="modal">
-    <div class="modal-content" style="max-width: 380px; padding: 0; overflow: hidden;">
+    <div class="modal-content" id="monsterDetailModalContent" style="max-width: 380px; padding: 0; overflow: hidden;">
       <span class="modal-close-circle" onclick="closeMonsterDetailModal()">&times;</span>
       <div id="monsterDetailBody"></div>
     </div>
@@ -1181,7 +1196,7 @@
   
   <!-- Modal für Handelsangebot erstellen -->
   <div id="tradeOfferModal" class="modal">
-    <div class="modal-content" style="max-width: 400px; padding: 0; overflow: hidden;">
+    <div class="modal-content" id="tradeOfferModalContent" style="max-width: 400px; padding: 0; overflow: hidden;">
       <span class="modal-close-circle" onclick="closeTradeOfferModal()">&times;</span>
       <div id="tradeOfferModalBody"></div>
       <div style="padding: 5px 20px 20px;">
@@ -1844,7 +1859,7 @@
       
       collectedMonsters.forEach(monster => {
         const card = document.createElement("div");
-        card.className = `card rarity-${monster.rarity}${monster.image ? " has-image" : ""}${monster.hasShiny ? " shiny" : ""}${monster.rarity === "mythic" ? " mythic-border" : ""}`;
+        card.className = `card rarity-${monster.rarity}${monster.image ? " has-image" : ""}${monster.hasShiny ? " shiny" : ""}${monster.rarity === "mythic" ? " mythic-border" : ""}${monster.rarity === "epic" ? " epic-border" : ""}`;
         card.style.cursor = "pointer";
         card.onclick = () => showMonsterDetail(monster);
         card.innerHTML = cardBodyHTML(monster, true);
@@ -1856,6 +1871,10 @@
     function showMonsterDetail(monster) {
       const body = document.getElementById("monsterDetailBody");
       const rarityLabel = monster.rarity.charAt(0).toUpperCase() + monster.rarity.slice(1);
+      
+      const modalContent = document.getElementById("monsterDetailModalContent");
+      modalContent.classList.toggle("epic-border", monster.rarity === "epic");
+      modalContent.classList.toggle("mythic-border", monster.rarity === "mythic");
       
       const instancesHTML = (monster.instances && monster.instances.length)
         ? `<div style="margin-top: 15px; text-align: left; max-height: 130px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;">
@@ -2047,7 +2066,7 @@
       
       collectedMonsters.forEach((monster, index) => {
         const card = document.createElement("div");
-        card.className = `card rarity-${monster.rarity}${monster.image ? " has-image" : ""}${monster.hasShiny ? " shiny" : ""}${monster.rarity === "mythic" ? " mythic-border" : ""}`;
+        card.className = `card rarity-${monster.rarity}${monster.image ? " has-image" : ""}${monster.hasShiny ? " shiny" : ""}${monster.rarity === "mythic" ? " mythic-border" : ""}${monster.rarity === "epic" ? " epic-border" : ""}`;
         card.style.cursor = "pointer";
         card.onclick = () => addMonsterToDeck(monster);
         card.innerHTML = cardBodyHTML(monster, true);
@@ -2197,7 +2216,7 @@
       playerDeck.forEach((monster, index) => {
         if (monster) {
           const card = document.createElement("div");
-          card.className = `card rarity-${monster.rarity}${monster.image ? " has-image" : ""}${monster.hasShiny ? " shiny" : ""}${monster.rarity === "mythic" ? " mythic-border" : ""}`;
+          card.className = `card rarity-${monster.rarity}${monster.image ? " has-image" : ""}${monster.hasShiny ? " shiny" : ""}${monster.rarity === "mythic" ? " mythic-border" : ""}${monster.rarity === "epic" ? " epic-border" : ""}`;
           card.style.cursor = "pointer";
           card.onclick = () => selectMonsterForBattle(index);
           card.innerHTML = cardBodyHTML(monster, false);
@@ -2604,7 +2623,7 @@
         if (!template) return;
         
         const el = document.createElement("div");
-        el.className = `card rarity-${template.rarity}${template.image ? " has-image" : ""}${card.shiny ? " shiny" : ""}${template.rarity === "mythic" ? " mythic-border" : ""}`;
+        el.className = `card rarity-${template.rarity}${template.image ? " has-image" : ""}${card.shiny ? " shiny" : ""}${template.rarity === "mythic" ? " mythic-border" : ""}${template.rarity === "epic" ? " epic-border" : ""}`;
         el.style.cursor = "pointer";
         el.onclick = () => openTradeOfferModal(card);
         
@@ -2637,6 +2656,10 @@
       const body = document.getElementById("tradeOfferModalBody");
       const rarityLabel = template.rarity.charAt(0).toUpperCase() + template.rarity.slice(1);
       const shinyLine = card.shiny ? `<div style="color: #ffd700; font-weight: bold; margin-top: 5px;">🌟 SHINY</div>` : "";
+      
+      const tradeModalContent = document.getElementById("tradeOfferModalContent");
+      tradeModalContent.classList.toggle("epic-border", template.rarity === "epic");
+      tradeModalContent.classList.toggle("mythic-border", template.rarity === "mythic");
       
       if (template.image) {
         body.innerHTML = `
